@@ -24,21 +24,12 @@ resource "azurerm_resource_group" "default" {
   }
 }
 
-resource "azurerm_resource_group" "nodepool" {
-  name     = "${random_pet.prefix.id}-nodepool-rg"
-  location = "CanadaCentral"
-
-  tags = {
-    environment = "Demo"
-  }
-}
-
 resource "azurerm_kubernetes_cluster" "default" {
   name                = "${random_pet.prefix.id}-aks"
   location            = azurerm_resource_group.default.location
   resource_group_name = azurerm_resource_group.default.name
   dns_prefix          = "${random_pet.prefix.id}-k8s"
-  node_resource_group = azurerm_resource_group.nodepool.name
+  node_resource_group = "${random_pet.prefix.id}-nodepool-rg"
   oidc_issuer_enabled = true
   sku_tier            = "Free"  
 
@@ -70,7 +61,7 @@ resource "azurerm_kubernetes_cluster" "default" {
     network_mode   = "transparent"
     network_policy = "azure"
   }
-  
+
   identity {
     type = "SystemAssigned"
   }
