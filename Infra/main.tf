@@ -17,7 +17,16 @@ data "azurerm_client_config" "current" {
 
 resource "azurerm_resource_group" "default" {
   name     = "${random_pet.prefix.id}-rg"
-  location = "West US 2"
+  location = "CanadaCentral"
+
+  tags = {
+    environment = "Demo"
+  }
+}
+
+resource "azurerm_resource_group" "nodepool" {
+  name     = "${random_pet.prefix.id}-nodepool-rg"
+  location = "CanadaCentral"
 
   tags = {
     environment = "Demo"
@@ -29,15 +38,39 @@ resource "azurerm_kubernetes_cluster" "default" {
   location            = azurerm_resource_group.default.location
   resource_group_name = azurerm_resource_group.default.name
   dns_prefix          = "${random_pet.prefix.id}-k8s"
+  node_resource_group = azurerm_resource_group.nodepool.name
   oidc_issuer_enabled = true
+  sku_tier            = "Free"  
+
+  automatic_channel_upgrade = "node-image"
+
+    maintenance_window {
+      allowed {
+        day   = "Sunday"
+        hours = [0, 1, 2]
+      }
+    }
 
   default_node_pool {
     name            = "default"
     node_count      = 1
     vm_size         = "Standard_D2_v5"
     os_disk_size_gb = 30
+    os_sku          = "CBLMariner"
+
+    zones = [1, 2, 3]
+
+    upgrade_settings {
+      max_surge = "33%"
+    }
   }
 
+  network_profile {
+    network_plugin = "azure"
+    network_mode   = "transparent"
+    network_policy = "azure"
+  }
+  
   identity {
     type = "SystemAssigned"
   }
